@@ -1,0 +1,163 @@
+Require Export String.
+Require Export List.
+Require Extraction.
+Require Import Ascii.
+Require Import BinNums.
+Require Export ImpCore.
+
+Axiom caml_string: Type.
+Extract Inlined Constant caml_string => "string".
+
+(** New line *)
+Definition nl: string := String (ascii_of_pos 10%positive) EmptyString.
+
+Inductive pstring: Type :=
+  | Str: string -> pstring
+  | CamlStr: caml_string -> pstring
+  | Concat: pstring -> pstring -> pstring.
+
+Coercion Str: string >-> pstring.
+Bind Scope string_scope with pstring.
+
+Notation "x +; y" := (Concat x y)
+    (at level 65, left associativity): string_scope.
+
+(** Coq references *)
+
+Import Notations.
+Local Open Scope impure.
+
+Record cref {A} := {
+  set: A -> ?? unit;
+  get: unit -> ?? A
+}.
+Arguments cref: clear implicits.
+
+Axiom make: forall {A}, A -> ?? cref A.
+Extract Constant make => "(fun x -> let r = ref x in { set = (fun y -> r:=y); get = (fun () -> !r) })".
+
+
+(** Data-structure for a logger *)
+
+Record logger {A:Type} := {
+  log_insert: A -> ?? unit;
+  log_info: unit -> ?? pstring;
+}.
+Arguments logger: clear implicits.
+
+Axiom count_logger: unit -> ?? logger unit.
+Extract Constant count_logger => "(fun () -> let count = ref 0 in { log_insert = (fun () -> count := !count + 1); log_info = (fun () -> (CamlStr (string_of_int !count))) })".
+
+
+(** Axioms of Physical equality  *)
+
+Module Type PhysEq.
+
+Axiom phys_eq: forall {A}, A -> A -> ?? bool.
+
+Axiom phys_eq_correct: forall A (x y:A), WHEN phys_eq x y ~> b THEN b=true -> x=y.
+
+End PhysEq.
+
+
+
+(* We only check here that above axioms are not trivially inconsistent...
+   (but this does not prove the correctness of the extraction directive below).
+ *)
+Module PhysEqModel: PhysEq.
+
+Definition phys_eq {A} (x y: A) := ret false.
+
+Lemma phys_eq_correct: forall A (x y:A), WHEN phys_eq x y ~> b THEN b=true -> x=y.
+Proof.
+  wlp_simplify. discriminate.
+Qed.
+
+End PhysEqModel.
+
+
+
+Export PhysEqModel.
+
+Extract Constant phys_eq => "(==)".
+Hint Resolve phys_eq_correct: wlp.
+
+
+
+(** Data-structure for generic hash-consing *)
+
+Axiom hashcode: Type.
+Extract Inlined Constant hashcode => "int".
+
+Record pre_hashV {A: Type} := {
+  pre_data: A;
+  hcodes: list hashcode;
+  debug_info: option pstring;
+}.
+Arguments pre_hashV: clear implicits.
+
+Record hashV {A:Type}:= {
+  data: A;
+  hid: hashcode
+}.
+Arguments hashV: clear implicits.
+
+Record hashExport {A:Type}:= {
+  get_hashV: hashcode -> ?? pre_hashV A;
+  iterall: ((list pstring) -> hashcode -> pre_hashV A -> ?? unit) -> ?? unit; (* iter on all elements in the hashtbl, by order of creation *)
+}.
+Arguments hashExport: clear implicits.
+
+Record hashConsing {A:Type}:= {
+  hC: pre_hashV A -> ?? hashV A;
+  hC_known: pre_hashV A -> ?? hashV A; (* fails on unknown inputs *)
+  (**** below: debugging functions ****)
+  next_log: pstring -> ?? unit; (* insert a log info (for the next introduced element) -- regiven by [iterall export] below *)
+  export: unit -> ?? hashExport A ; 
+}.
+Arguments hashConsing: clear implicits.
+
+(** recMode: this is mainly for Tests ! *)
+Inductive recMode:= StdRec | MemoRec | BareRec | BuggyRec.
+
+
+(* This a copy-paste from definitions in CompCert/Lib/CoqLib.v *)
+Lemma modusponens: forall (P Q: Prop), P -> (P -> Q) -> Q.
+Proof. auto. Qed.
+
+Ltac exploit x :=
+    refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _ _) _)
+ || refine (modusponens _ _ (x _ _ _) _)
+ || refine (modusponens _ _ (x _ _) _)
+ || refine (modusponens _ _ (x _) _).
