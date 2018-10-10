@@ -8,18 +8,11 @@ returning a postcondition on its possible results (ie a relation between its
 parameter and its result). Side-effects are simply ignored. And
 reasoning on such a function is only possible in partial correctness.
 
-A major feature of this cooperation between Coq and OCaml typechecker
-is to provide very simple
-[parametric proofs](http://homepages.inf.ed.ac.uk/wadler/topics/parametricity.html)
-about polymorphic OCaml functions.  They correspond here to prove, by
-reasoning only on their type, that these functions preserve some
-invariants.  As an example, we prove the partial correctness of a
-generic memoizing fixpoint operator: see `rec_correct` lemma at the
-end of [ImpLoops](ImpLoops.v).  This lemma is applied in
-[FibExample](https://github.com/boulme/ImpureDemo/blob/master/coq_src/FibExample.v)
-to prove the partial correctness of a memoized version of the naive
-Fibonacci function.  However, currently, the soundness of these
-parametric proofs is still a conjecture.
+See further explanations and examples on [ImpureDemo](https://github.com/boulme/ImpureDemo).
+
+## Credits
+
+[Sylvain Boulmé](mailto:Sylvain.Boulme@univ-grenoble-alpes.fr).
 
 ## Code Overview
 
