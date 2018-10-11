@@ -6,7 +6,7 @@ Require Import BinNums.
 Require Export ImpCore.
 
 Axiom caml_string: Type.
-Extract Inlined Constant caml_string => "string".
+Extract Constant caml_string => "string".
 
 (** New line *)
 Definition nl: string := String (ascii_of_pos 10%positive) EmptyString.
@@ -87,7 +87,7 @@ Hint Resolve phys_eq_correct: wlp.
 (** Data-structure for generic hash-consing *)
 
 Axiom hashcode: Type.
-Extract Inlined Constant hashcode => "int".
+Extract Constant hashcode => "int".
 
 Record pre_hashV {A: Type} := {
   pre_data: A;

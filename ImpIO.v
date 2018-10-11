@@ -29,7 +29,7 @@ Extract Constant timer => "ImpIOOracles.timer".
 (** Exception Handling *)
 
 Axiom exit_observer: Type.
-Extract Inlined Constant exit_observer => "((unit -> unit) ref)".
+Extract Constant exit_observer => "((unit -> unit) ref)".
 
 Axiom new_exit_observer: (unit -> ??unit) -> ??exit_observer.
 Extract Constant new_exit_observer => "ImpIOOracles.new_exit_observer".
