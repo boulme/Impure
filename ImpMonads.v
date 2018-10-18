@@ -34,8 +34,6 @@ Module Type MayReturnMonad.
   Declare Instance mayRet_eq_compat A: Proper ((@impeq A) ==> Logic.eq ==> iff) (@mayRet A).
   Declare Instance bind_eq_compat A B: Proper ((@impeq A) ==> (pointwise_relation A (@impeq B)) ==> (@impeq B)) (@bind A B).
 
-  (*  What about callprof ? *)
-
   Axiom impeq_bind_ret_l: forall (A B:Type) (k: A -> t B) (a:A),
      (impeq (bind (ret a) k) (k a)).
 
@@ -127,7 +125,7 @@ Module PowerSetMonad<: MayReturnMonad.
 End PowerSetMonad.
 
 
-
+(** The trivial interpretation *)
 Module TrivialMonad<: MayReturnMonad.
 
    Definition t (A:Type) := A.
@@ -202,13 +200,10 @@ End TrivialMonad.
 
 
 
-
-Require Import Program.
-
-(** Model of impure computation as predicate *)
+(** Model of impure computation as state-transformers *)
 Module StateMonad<: MayReturnMonad.
  
-   Parameter St: Type.
+   Parameter St: Type. (* A global state *)
 
    Definition t (A:Type) := St -> A * St.
 
