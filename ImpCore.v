@@ -229,3 +229,12 @@ Proof.
   intros H; rewrite List_fold_left_impeq_run.
   apply wlp_bind. auto.
 Qed.
+
+Lemma impeq_seq_ret_tt_r (k: ?? unit): impeq (k;;RET()) k.
+Proof.
+  eapply Equivalence_Transitive. 2: apply impeq_bind_ret_r.
+  eapply bind_eq_compat; eauto.
+  intro x. destruct x; auto.
+Qed.
+
+Hint Rewrite impeq_seq_ret_tt_r: impeq.
