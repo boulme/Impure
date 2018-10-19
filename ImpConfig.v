@@ -53,7 +53,7 @@ Module Impure: MayReturnMonad := PowerSetMonad.
 
 Export Impure.
 
-Extraction Inline ret callproof.
+Extraction Inline ret mk_annot.
 
 (* WARNING. The following directive is unsound.
 

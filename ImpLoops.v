@@ -26,7 +26,7 @@ Program Definition while {S} cond body s0 (I: S -> Prop | while_loop_invariant c
           fun s =>
           match (cond s) with
           | true => 
-             DO s' <~ callproof (body s) ;; 
+             DO s' <~ mk_annot (body s) ;; 
              RET (inl (A:={s | I s }) s')
           | false => 
              RET (inr (B:={s | I s /\ cond s = false}) s)
@@ -46,7 +46,7 @@ Program Definition loop_until_None {S} (I: S -> Prop) (body: S -> ?? (option S))
   := loop (A:={s | I s0 -> I s})
        (s0, 
           fun s =>
-          DO s' <~ callproof (body s) ;;
+          DO s' <~ mk_annot (body s) ;;
           match s' with
           | Some s1 => RET (inl (A:={s | I s0 -> I s }) s1)
           | None => RET (inr (B:=~(I s0)) _)
@@ -104,7 +104,7 @@ Definition rec_preserv {A B} (recF: (A -> ?? B) -> A -> ?? B) (R: A -> B -> Prop
 
 Program Definition rec {A B} beq recF (R: A -> B -> Prop) (H1: rec_preserv recF R) (H2: beq_correct beq): ?? (A -> ?? B) :=
   DO f <~ xrec (B:=answ R) (fun f x =>
-         DO y <~ callproof (recF (wapply beq f) x) ;;
+         DO y <~ mk_annot (recF (wapply beq f) x) ;;
          RET {| input := x; output := proj1_sig y |});;
   RET (wapply beq f).
 Obligation 1.

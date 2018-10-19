@@ -8,7 +8,7 @@ Require Export ImpConfig.
 (* Theory: bind + embed => dbind 
 
 Program Definition dbind {A B} (k1: t A) (k2: forall (a:A), (mayRet k1 a) -> t B) : t B
-  := bind (callproof k1) (fun a => k2 a _).
+  := bind (mk_annot k1) (fun a => k2 a _).
 
 Lemma mayRet_dbind: forall (A B:Type) k1 k2 (b:B),
      mayRet (dbind k1 k2) b -> exists a:A, exists H: (mayRet k1 a), mayRet (k2 a H) b.
