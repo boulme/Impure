@@ -33,8 +33,8 @@ Record cref {A} := {
 }.
 Arguments cref: clear implicits.
 
-Axiom make: forall {A}, A -> ?? cref A.
-Extract Constant make => "(fun x -> let r = ref x in { set = (fun y -> r:=y); get = (fun () -> !r) })".
+Axiom make_cref: forall {A}, A -> ?? cref A.
+Extract Constant make_cref => "(fun x -> let r = ref x in { set = (fun y -> r:=y); get = (fun () -> !r) })".
 
 
 (** Data-structure for a logger *)

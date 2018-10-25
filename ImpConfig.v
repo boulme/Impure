@@ -30,17 +30,17 @@ End ImpureView.
 
 Module Impure: ImpureView.
 
-  Include TrivialMonad.
+  Include IdentityMonad.
 
-  Definition unsafe_coerce {A} (x:A) := x.
+  Definition unsafe_coerce {A} (x:t A) := x.
 
   Lemma unsafe_coerce_not_really_correct: forall A (k: t A) x, (unsafe_coerce k)=x -> mayRet k x.
   Proof.
     unfold unsafe_coerce, mayRet; auto.
-  Qed. 
-
+  Qed.
 
 End Impure.
+
 
 (** Comment the above code and decomment this to test that coq proofs still work with an impure monad !
 
@@ -55,6 +55,7 @@ Export Impure.
 
 Extraction Inline ret mk_annot.
 
+
 (* WARNING. The following directive is unsound.
 
   Extraction Inline bind
@@ -63,10 +64,11 @@ For example, it may lead to extract the following code as "true" (instead of an 
   failwith "foo";;true
 
 *)
+
 Extract Inlined Constant bind => "(|>)".
+
 
 Extract Constant t "" => "". (* This weird directive extracts [t] as "'a" instead of "'a t" *)
 Extraction Inline t.
-
 
 Global Opaque t.

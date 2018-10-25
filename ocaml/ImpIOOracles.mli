@@ -9,6 +9,8 @@ it pre-computes all positives lower or equal to this bound.
 *)
 val memo_int2pos: int -> int -> BinNums.positive
 
+val read_line: unit -> pstring
+
 val print: pstring -> unit
 
 val println: pstring -> unit

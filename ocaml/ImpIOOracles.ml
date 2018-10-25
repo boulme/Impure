@@ -78,6 +78,9 @@ let rec print: pstring -> unit
 let println: pstring -> unit
   = fun l -> print l; print_newline()
 
+let read_line () =
+  CamlStr (Pervasives.read_line());;
+    
 exception ImpureFail of pstring;;
 
 let exn2string: exn -> pstring

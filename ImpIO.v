@@ -17,6 +17,9 @@ Extract Constant print => "ImpIOOracles.print".
 Axiom println: pstring -> ?? unit.
 Extract Constant println => "ImpIOOracles.println".
 
+Axiom read_line: unit -> ?? pstring.
+Extract Constant read_line => "ImpIOOracles.read_line".
+
 Require Import ZArith.
 Axiom string_of_Z: Z -> ?? pstring.
 Extract Constant string_of_Z => "ImpIOOracles.string_of_Z".

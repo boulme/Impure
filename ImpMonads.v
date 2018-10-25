@@ -125,8 +125,8 @@ Module PowerSetMonad<: MayReturnMonad.
 End PowerSetMonad.
 
 
-(** The trivial interpretation *)
-Module TrivialMonad<: MayReturnMonad.
+(** The identity interpretation *)
+Module IdentityMonad<: MayReturnMonad.
 
    Definition t (A:Type) := A.
 
@@ -195,9 +195,7 @@ Module TrivialMonad<: MayReturnMonad.
      unfold impeq, bind, ret, mk_annot, mayRet. simpl. auto.
    Qed.
 
-End TrivialMonad.
-
-
+End IdentityMonad.
 
 
 (** Model of impure computation as state-transformers *)
