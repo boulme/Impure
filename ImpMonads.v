@@ -118,3 +118,31 @@ Module StateMonad<: MayReturnMonad.
    Qed. 
 
 End StateMonad.
+
+(** The deferred interpretation *)
+Module DeferredMonad<: MayReturnMonad.
+
+   Definition t (A:Type) := unit -> A.
+
+   (* may-return semantics of computations *)
+   Definition mayRet {A:Type} (a: t A) (b:A): Prop := a tt=b.
+
+   Definition ret {A:Type} (a:A) : t A := fun _ => a.
+
+   Definition bind {A B:Type} (k1: t A) (k2: A -> t B) : t B := fun _ => k2 (k1 tt) tt.
+
+   Definition mk_annot {A} (k: t A) : t { a: A | mayRet k a } 
+    := fun _ => exist _ (k tt) (eq_refl (k tt)).
+
+   Lemma mayRet_ret (A:Type) (a b: A): mayRet (ret a) b -> a=b.
+   Proof.
+     intuition.
+   Qed.
+
+   Lemma mayRet_bind (A B:Type) (k1:t A) k2 (b:B):
+         mayRet (bind k1 k2) b -> exists (a:A), mayRet k1 a /\ mayRet (k2 a) b.
+   Proof.
+     firstorder.
+   Qed.
+
+End DeferredMonad.

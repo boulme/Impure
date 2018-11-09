@@ -61,11 +61,20 @@ Extract Constant try_with_any => "ImpIOOracles.try_with_any".
 Notation "'RAISE' e" := (DO r <~ raise (A:=False) e ;; RET (match r with end)) (at level 0): impure_scope.
 Notation "'FAILWITH' msg" := (DO r <~ fail (A:=False) msg ;; RET (match r with end)) (at level 0): impure_scope.
 
+Definition _FAILWITH {A:Type} msg: ?? A := FAILWITH msg.
+
+Example _FAILWITH_correct A msg (P: A -> Prop):
+  WHEN _FAILWITH msg ~> r THEN P r.
+Proof.
+  wlp_simplify.
+Qed.
+
 Notation "'TRY' k1 'WITH_FAIL' s ',' e '=>' k2" := (try_with_fail (fun _ => k1, fun s e => k2))
     (at level 55, k1 at level 53, right associativity): impure_scope.
 
 Notation "'TRY' k1 'WITH_ANY' e '=>' k2" := (try_with_any (fun _ => k1, fun e => k2))
     (at level 55, k1 at level 53, right associativity): impure_scope.
+
 
 Program Definition assert_b (b: bool) (msg: pstring): ?? b=true :=
   match b with
@@ -83,7 +92,7 @@ Proof.
   simpl; wlp_simplify.
 Qed.
 
-Program Definition try_with_fail_ensure {A} (k1: unit -> ?? A) (k2: pstring -> exn -> ??A) (P: A -> Prop | wlp (k1 tt) P /\ (forall s e, wlp (k2 s e) P)): ?? { r | P r }
+Program Definition try_catch_fail_ensure {A} (k1: unit -> ?? A) (k2: pstring -> exn -> ??A) (P: A -> Prop | wlp (k1 tt) P /\ (forall s e, wlp (k2 s e) P)): ?? { r | P r }
   := TRY
         DO r <~ mk_annot (k1 tt);; 
         RET (exist P r _)
@@ -94,5 +103,57 @@ Obligation 2.
   unfold wlp in * |- *; eauto.
 Qed.
 
-Notation "'TRY' k1 'OR_FAIL' s ',' e '=>' k2 'ENSURE' P" := (try_with_fail_ensure (fun _ => k1) (fun s e => k2) (exist _ P _))
+Notation "'TRY' k1 'CATCH_FAIL' s ',' e '=>' k2 'ENSURE' P" := (try_catch_fail_ensure (fun _ => k1) (fun s e => k2) (exist _ P _))
     (at level 55, k1 at level 53, right associativity): impure_scope.
+
+Definition is_try_post {A} (P: A -> Prop) k1 k2 : Prop := 
+  wlp (k1 ()) P /\ forall (e:exn), wlp (k2 e) P.
+
+Program Definition try_catch_ensure {A} k1 k2 (P:A->Prop|is_try_post P k1 k2): ?? { r | P r }
+  := TRY
+        DO r <~ mk_annot (k1 ());; 
+        RET (exist P r _)
+     WITH_ANY e => 
+        DO r <~ mk_annot (k2 e);;
+        RET (exist P r _).
+Obligation 1.
+  unfold is_try_post, wlp in * |- *; intuition eauto.
+Qed.
+Obligation 2.
+  unfold is_try_post, wlp in * |- *; intuition eauto.
+Qed.
+
+Notation "'TRY' k1 'CATCH' e '=>' k2 'ENSURE' P" := (try_catch_ensure (fun _ => k1) (fun e => k2) (exist _ P _))
+    (at level 55, k1 at level 53, right associativity): impure_scope.
+
+
+Program Example tryex {A} (x y:A) := 
+  TRY (RET x)
+  CATCH _ => (RET y)
+  ENSURE (fun r => r = x \/ r = y).
+Obligation 1.
+  split; wlp_simplify.
+Qed.
+
+Program Example tryex_test {A} (x y:A): 
+  WHEN tryex x y ~> r THEN `r <> x -> `r = y.
+Proof.
+  wlp_simplify. destruct exta as [r [X|X]]; intuition.
+Qed.
+
+
+Program Example try_branch1 {A} (x:A): ?? { r | r = x} := 
+  TRY (RET x)
+  CATCH e => (FAILWITH "!")
+  ENSURE _.
+Obligation 1.
+  split; wlp_simplify.
+Qed.
+
+Program Example try_branch2 {A} (x:A): ?? { r | r = x} := 
+  TRY (FAILWITH "!")
+  CATCH e => (RET x)
+  ENSURE _.
+Obligation 1.
+  split; wlp_simplify.
+Qed.
