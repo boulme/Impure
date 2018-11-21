@@ -13,16 +13,20 @@ Module Type ImpureView.
 
  Include MayReturnMonad.
 
-(* WARNING: THIS IS REALLY UNSAFE TO DECOMMENT THE TWO FOLLOWING LINES !
+(* WARNING: THIS IS REALLY UNSAFE TO DECOMMENT THE "UnsafeImpure" module !
 
    unsafe_coerce coerces an impure computation into a pure one !
 
 *)
 
 (*
+ Module UnsafeImpure.
+
  Parameter unsafe_coerce: forall {A}, t A -> A.
 
  Parameter unsafe_coerce_not_really_correct: forall A (k: t A) (x:A), (unsafe_coerce k)=x -> mayRet k x. 
+
+ End UnsafeImpure.
 *)
 
 End ImpureView.
@@ -32,12 +36,16 @@ Module Impure: ImpureView.
 
   Include IdentityMonad.
 
+  Module UnsafeImpure.
+
   Definition unsafe_coerce {A} (x:t A) := x.
 
   Lemma unsafe_coerce_not_really_correct: forall A (k: t A) x, (unsafe_coerce k)=x -> mayRet k x.
   Proof.
     unfold unsafe_coerce, mayRet; auto.
   Qed.
+
+  End UnsafeImpure.
 
 End Impure.
 
