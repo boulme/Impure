@@ -15,7 +15,7 @@ Extract Constant loop => "ImpLoopOracles.loop".
 
 Record while_loop_invariant {S} (cond: S -> bool) (body: S -> ?? S) (s0: S) (I: S -> Prop): Prop :=
   { while_init: I s0;
-    while_preserv: forall s, I s -> cond s = true -> WHEN (body s) ~> s' THEN I s'
+    while_preserv s: I s -> cond s = true -> WHEN (body s) ~> s' THEN I s'
   }.
 Arguments while_init [S cond body s0 I].
 Arguments while_preserv [S cond body s0 I].
