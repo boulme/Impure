@@ -11,38 +11,38 @@ Local Open Scope impure.
 Axiom loop: forall {A B}, A * (A -> ?? (A+B)) -> ?? B.
 Extract Constant loop => "ImpLoopOracles.loop".
 
-(** A while loop *)
 
-Record while_loop_invariant {S} (cond: S -> bool) (body: S -> ?? S) (s0: S) (I: S -> Prop): Prop :=
-  { while_init: I s0;
-    while_preserv s: I s -> cond s = true -> WHEN (body s) ~> s' THEN I s'
-  }.
-Arguments while_init [S cond body s0 I].
-Arguments while_preserv [S cond body s0 I].
+Section While_Loop.
 
-Program Definition while {S} cond body s0 (I: S -> Prop | while_loop_invariant cond body s0 I): ?? {s | I s /\ cond s = false}
-  := loop (A:={s | I s})
+(** Local Definition of "while-loop-invariant" *)
+Let wli {S} cond body (I: S -> Prop) := forall s, I s -> cond s = true -> WHEN (body s) ~> s' THEN I s'.
+
+Program Definition while {S} cond body (I: S -> Prop | wli cond body I) s0: ?? {s | I s0 -> I s /\ cond s = false}
+  := loop (A:={s | I s0 -> I s})
        (s0, 
           fun s =>
           match (cond s) with
           | true => 
              DO s' <~ mk_annot (body s) ;; 
-             RET (inl (A:={s | I s }) s')
+             RET (inl (A:={s | I s0 -> I s }) s')
           | false => 
-             RET (inr (B:={s | I s /\ cond s = false}) s)
+             RET (inr (B:={s | I s0 -> I s /\ cond s = false}) s)
           end).
-Obligation 1.
-  destruct H; auto.
-Qed.
 Obligation 2.
-  eapply (while_preserv H1); eauto.
+  unfold wli, wlp in * |-; eauto.
 Qed.
 Extraction Inline while.
 
-(** A loop until None (useful to demonstrate a UNSAT property) *)
+End While_Loop.
 
-Program Definition loop_until_None {S} (I: S -> Prop) (body: S -> ?? (option S)) 
-  (H:forall s, I s -> WHEN (body s) ~> s' THEN match s' with Some s1 => I s1 | None => False end) (s0:S): ?? ~(I s0)
+
+Section Loop_Until_None.
+(** useful to demonstrate a UNSAT property *)
+
+(** Local Definition of "loop-until-None-invariant" *)
+Let luni {S} (body: S -> ?? (option S)) (I: S -> Prop) := forall s, I s -> WHEN (body s) ~> s' THEN match s' with Some s1 => I s1 | None => False end.
+
+Program Definition loop_until_None {S} body (I: S -> Prop | luni body I) s0: ?? ~(I s0)
   := loop (A:={s | I s0 -> I s})
        (s0, 
           fun s =>
@@ -52,12 +52,14 @@ Program Definition loop_until_None {S} (I: S -> Prop) (body: S -> ?? (option S))
           | None => RET (inr (B:=~(I s0)) _)
           end).
 Obligation 2.
-  refine (H s _ _ H1). auto.
+  refine (H2 s _ _ H0). auto.
 Qed.
 Obligation 3.
-  intros X; refine (H s _ _ H0). auto.
+  intros X; refine (H1 s _ _ H). auto.
 Qed.
 Extraction Inline loop_until_None.
+
+End Loop_Until_None.
 
 
 (*********************************************)
