@@ -4,11 +4,25 @@ Require Extraction.
 Require Import Ascii.
 Require Import BinNums.
 Require Export ImpCore.
+Require Export PArith.
+
+
+Import Notations.
+Local Open Scope impure.
+
+(** Impure lazy andb of booleans *)
+Definition iandb (k1 k2: ??bool): ?? bool :=
+  DO r1 <~ k1 ;;
+  if r1 then k2 else RET false.
+
+Extraction Inline iandb. (* Juste pour l'efficacité à l'extraction ! *)
+
+(** Strings for pretty-printing *)
 
 Axiom caml_string: Type.
 Extract Constant caml_string => "string".
 
-(** New line *)
+(* New line *)
 Definition nl: string := String (ascii_of_pos 10%positive) EmptyString.
 
 Inductive pstring: Type :=
@@ -23,9 +37,6 @@ Notation "x +; y" := (Concat x y)
     (at level 65, left associativity): string_scope.
 
 (** Coq references *)
-
-Import Notations.
-Local Open Scope impure.
 
 Record cref {A} := {
   set: A -> ?? unit;
@@ -51,20 +62,15 @@ Extract Constant count_logger => "(fun () -> let count = ref 0 in { log_insert =
 
 (** Axioms of Physical equality  *)
 
-Module Type PhysEq.
-
 Axiom phys_eq: forall {A}, A -> A -> ?? bool.
 
 Axiom phys_eq_correct: forall A (x y:A), WHEN phys_eq x y ~> b THEN b=true -> x=y.
-
-End PhysEq.
-
 
 
 (* We only check here that above axioms are not trivially inconsistent...
    (but this does not prove the correctness of the extraction directive below).
  *)
-Module PhysEqModel: PhysEq.
+Module PhysEqModel.
 
 Definition phys_eq {A} (x y: A) := ret false.
 
@@ -75,13 +81,14 @@ Qed.
 
 End PhysEqModel.
 
-
-
-Export PhysEqModel.
-
-Extract Constant phys_eq => "(==)".
+Extract Inlined Constant phys_eq => "(==)".
 Hint Resolve phys_eq_correct: wlp.
 
+
+Axiom struct_eq: forall {A}, A -> A -> ?? bool.
+Axiom struct_eq_correct: forall A (x y:A), WHEN struct_eq x y ~> b THEN if b then x=y else x<>y.
+Extract Inlined Constant struct_eq => "(=)".
+Hint Resolve struct_eq_correct: wlp.
 
 
 (** Data-structure for generic hash-consing *)
