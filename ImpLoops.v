@@ -17,7 +17,7 @@ Section While_Loop.
 (** Local Definition of "while-loop-invariant" *)
 Let wli {S} cond body (I: S -> Prop) := forall s, I s -> cond s = true -> WHEN (body s) ~> s' THEN I s'.
 
-Program Definition while {S} cond body (I: S -> Prop | wli cond body I) s0: ?? {s | I s0 -> I s /\ cond s = false}
+Program Definition while {S} cond body (I: S -> Prop | wli cond body I) s0: ?? {s | (I s0 -> I s) /\ cond s = false}
   := loop (A:={s | I s0 -> I s})
        (s0, 
           fun s =>
@@ -26,7 +26,7 @@ Program Definition while {S} cond body (I: S -> Prop | wli cond body I) s0: ?? {
              DO s' <~ mk_annot (body s) ;; 
              RET (inl (A:={s | I s0 -> I s }) s')
           | false => 
-             RET (inr (B:={s | I s0 -> I s /\ cond s = false}) s)
+             RET (inr (B:={s | (I s0 -> I s) /\ cond s = false}) s)
           end).
 Obligation 2.
   unfold wli, wlp in * |-; eauto.
@@ -83,7 +83,7 @@ Definition wapply {A B} {R: A -> B -> Prop} (beq: A -> A -> ?? bool) (k: A -> ??
   assert_b b msg;;
   RET (output a).
 
-Lemma wapply_correct A B (R: A -> B -> Prop) (beq: A -> A -> ?? bool)x (k: A -> ?? answ R):
+Lemma wapply_correct A B (R: A -> B -> Prop) (beq: A -> A -> ?? bool) (k: A -> ?? answ R) x:
  beq_correct beq
  -> WHEN wapply beq k x ~> y THEN R x y.
 Proof.
@@ -107,7 +107,7 @@ Definition rec_preserv {A B} (recF: (A -> ?? B) -> A -> ?? B) (R: A -> B -> Prop
 Program Definition rec {A B} beq recF (R: A -> B -> Prop) (H1: rec_preserv recF R) (H2: beq_correct beq): ?? (A -> ?? B) :=
   DO f <~ xrec (B:=answ R) (fun f x =>
          DO y <~ mk_annot (recF (wapply beq f) x) ;;
-         RET {| input := x; output := proj1_sig y |});;
+         RET {| input := x; output := `y |});;
   RET (wapply beq f).
 Obligation 1.
   eapply H1; eauto. clear H H1.
