@@ -1,8 +1,22 @@
 open ImpPrelude
 open HConsingDefs
 
+let make_dict (type key) (p: key Dict.hash_params) =
+  let module MyHashedType = struct
+    type t = key
+    let equal = p.Dict.test_eq 
+    let hash = p.Dict.hashing 
+  end in
+  let module MyHashtbl = Hashtbl.Make(MyHashedType) in
+  let dict = MyHashtbl.create 1000 in
+  {
+    Dict.set = (fun (k,d) -> MyHashtbl.replace dict k d);
+    Dict.get = (fun k -> MyHashtbl.find_opt dict k)
+  }
+
+
 exception Stop;;
-    
+
 let xhCons (type a) (hh:a hashH) =
   let module MyHashedType = struct
     type t = a hashinfo
