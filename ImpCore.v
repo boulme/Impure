@@ -132,6 +132,13 @@ Proof.
   destruct x; simpl; auto.
 Qed.
 
+Lemma wlp_option (A B: Type) (x: option A) (k1: A -> ??B) (k2: ??B)  (P: B -> Prop):
+  (forall a, x=Some a -> wlp (k1 a) P) -> 
+  (x=None -> wlp k2 P) -> 
+     (wlp (match x with Some a => k1 a | None => k2 end) P).
+Proof.
+  destruct x; simpl; auto.
+Qed.
 
 (* Tactics 
 
@@ -156,6 +163,7 @@ Ltac wlp_decompose :=
  || apply wlp_letprod
  || apply wlp_sum
  || apply wlp_sumbool
+ || apply wlp_option
  .
 
 (* this tactic simplifies the current "wlp" goal using any hint found via tactic "hint". *) 

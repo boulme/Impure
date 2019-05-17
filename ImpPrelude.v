@@ -102,6 +102,24 @@ Extract Constant hashcode => "int".
 Axiom hash_older: hashcode -> hashcode -> ?? bool.
 Extract Inlined Constant hash_older => "(<)".
 
+Module Dict.
+
+Record hash_params {A:Type} := {
+  test_eq: A -> A -> ??bool;
+  test_eq_correct: forall x y, WHEN test_eq x y ~> r THEN r=true -> x=y;
+  hashing: A -> ??hashcode;
+  log: A -> ??unit (* for debugging only *)
+}.
+Arguments hash_params: clear implicits.
+
+
+Record t {A B:Type} := {
+  set: A * B -> ?? unit;
+  get: A -> ?? option B
+}.
+Arguments t: clear implicits.
+
+End Dict.
 
 Module HConsingDefs.
 
