@@ -1,3 +1,4 @@
 open ImpPrelude
+open HConsingDefs
 
-val xhCons: (('a -> 'a -> bool) * ('a pre_hashV -> 'a hashV)) -> 'a hashConsing
+val xhCons: 'a hashH -> 'a hashConsing

@@ -96,33 +96,52 @@ Hint Resolve struct_eq_correct: wlp.
 Axiom hashcode: Type.
 Extract Constant hashcode => "int".
 
-Record pre_hashV {A: Type} := {
-  pre_data: A;
+(* NB: hashConsing is assumed to generate hash-code in ascending order.
+   This gives a way to check that a hash-consed value is older than an other one.
+*)
+Axiom hash_older: hashcode -> hashcode -> ?? bool.
+Extract Inlined Constant hash_older => "(<)".
+
+
+Module HConsingDefs.
+
+Record hashinfo {A: Type} := {
+  hdata: A;
   hcodes: list hashcode;
   debug_info: option pstring;
 }.
-Arguments pre_hashV: clear implicits.
+Arguments hashinfo: clear implicits.
 
-Record hashV {A:Type}:= {
-  data: A;
-  hid: hashcode
+(* for inductive types with intrinsic hash-consing *)
+Record hashH {A:Type}:= {
+  hash_eq: A -> A -> ?? bool;
+  get_hid: A -> hashcode;
+  set_hid: A -> hashcode -> A; (* WARNING: should only be used by hash-consing machinery *)
 }.
-Arguments hashV: clear implicits.
+Arguments hashH: clear implicits.
+
+Axiom unknown_hid: hashcode.
+Extract Constant unknown_hid => "-1".
+
+Definition ignore_hid {A} (hh: hashH A) (hv:A) := set_hid hh hv unknown_hid.
 
 Record hashExport {A:Type}:= {
-  get_hashV: hashcode -> ?? pre_hashV A;
-  iterall: ((list pstring) -> hashcode -> pre_hashV A -> ?? unit) -> ?? unit; (* iter on all elements in the hashtbl, by order of creation *)
+  get_info: hashcode -> ?? hashinfo A;
+  iterall: ((list pstring) -> hashcode -> hashinfo A -> ?? unit) -> ?? unit; (* iter on all elements in the hashtbl, by order of creation *)
 }.
 Arguments hashExport: clear implicits.
 
 Record hashConsing {A:Type}:= {
-  hC: pre_hashV A -> ?? hashV A;
-  hC_known: pre_hashV A -> ?? hashV A; (* fails on unknown inputs *)
-  (**** below: debugging functions ****)
+  hC: hashinfo A -> ?? A;
+  (**** below: debugging or internal functions ****)
+  next_hid: unit -> ?? hashcode; (* should be strictly less old than ignore_hid *)
+  remove: hashinfo A -> ??unit; (* SHOULD NOT BE USED ! *)
   next_log: pstring -> ?? unit; (* insert a log info (for the next introduced element) -- regiven by [iterall export] below *)
   export: unit -> ?? hashExport A ; 
 }.
 Arguments hashConsing: clear implicits.
+
+End HConsingDefs.
 
 (** recMode: this is mainly for Tests ! *)
 Inductive recMode:= StdRec | MemoRec | BareRec | BuggyRec.
