@@ -126,7 +126,6 @@ Module HConsingDefs.
 Record hashinfo {A: Type} := {
   hdata: A;
   hcodes: list hashcode;
-  debug_info: option pstring;
 }.
 Arguments hashinfo: clear implicits.
 

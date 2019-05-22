@@ -55,7 +55,7 @@ let xhCons (type a) (hh:a hashH) =
           | (j, info)::l' when i>=j -> logs:=l'; info::(step_log i)
           | _ -> []
         in let a = Array.make (MyHashtbl.length t) k in
-           MyHashtbl.iter (fun k d -> a.(hh.get_hid d) <- k) t;
+           MyHashtbl.iter (fun k d -> a.(hh.get_hid d) <- {k with hdata = d }) t;
            {
              get_info = (fun i -> a.(i));
              iterall = (fun iter_node -> Array.iteri (fun i k -> iter_node (step_log i) i k) a)
