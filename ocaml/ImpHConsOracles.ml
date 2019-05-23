@@ -18,6 +18,9 @@ let make_dict (type key) (p: key Dict.hash_params) =
 exception Stop;;
 
 let xhCons (type a) (hh:a hashH) =
+  (* We use a hash-table, but a hash-set would be sufficient !                    *)
+  (* Thus, we could use a weak hash-set, but prefer avoid it for easier debugging *)
+  (* Ideally, a parameter would allow to select between the weak or full version  *)
   let module MyHashedType = struct
     type t = a hashinfo
     let equal x y = hh.hash_eq x.hdata y.hdata
@@ -35,12 +38,12 @@ let xhCons (type a) (hh:a hashH) =
   let t = MyHashtbl.create 1000 in
   let logs = ref [] in
   {
-   hC = (fun (x:a hashinfo) ->
-     match MyHashtbl.find_opt t x with
-     | Some x' -> x'
+   hC = (fun (k:a hashinfo) ->
+     match MyHashtbl.find_opt t k with
+     | Some d -> d
      | None -> (*print_string "+";*)
-        let x' = hh.set_hid x.hdata (MyHashtbl.length t) in
-        MyHashtbl.add t x x'; x');
+        let d = hh.set_hid k.hdata (MyHashtbl.length t) in
+        MyHashtbl.add t {k with hdata = d } d; d);
    next_log = (fun info -> logs := (MyHashtbl.length t, info)::(!logs));
    next_hid = (fun () -> MyHashtbl.length t);
    remove = (fun (x:a hashinfo) -> MyHashtbl.remove t x);
@@ -55,7 +58,7 @@ let xhCons (type a) (hh:a hashH) =
           | (j, info)::l' when i>=j -> logs:=l'; info::(step_log i)
           | _ -> []
         in let a = Array.make (MyHashtbl.length t) k in
-           MyHashtbl.iter (fun k d -> a.(hh.get_hid d) <- {k with hdata = d }) t;
+           MyHashtbl.iter (fun k d -> a.(hh.get_hid d) <- k) t;
            {
              get_info = (fun i -> a.(i));
              iterall = (fun iter_node -> Array.iteri (fun i k -> iter_node (step_log i) i k) a)
