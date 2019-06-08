@@ -130,17 +130,17 @@ Record hashinfo {A: Type} := {
 Arguments hashinfo: clear implicits.
 
 (* for inductive types with intrinsic hash-consing *)
-Record hashH {A:Type}:= {
+Record hashP {A:Type}:= {
   hash_eq: A -> A -> ?? bool;
   get_hid: A -> hashcode;
   set_hid: A -> hashcode -> A; (* WARNING: should only be used by hash-consing machinery *)
 }.
-Arguments hashH: clear implicits.
+Arguments hashP: clear implicits.
 
 Axiom unknown_hid: hashcode.
 Extract Constant unknown_hid => "-1".
 
-Definition ignore_hid {A} (hh: hashH A) (hv:A) := set_hid hh hv unknown_hid.
+Definition ignore_hid {A} (hp: hashP A) (hv:A) := set_hid hp hv unknown_hid.
 
 Record hashExport {A:Type}:= {
   get_info: hashcode -> ?? hashinfo A;

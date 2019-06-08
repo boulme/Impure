@@ -110,17 +110,17 @@ Module HConsing.
 Export HConsingDefs.
 
 (* NB: this axiom is NOT intended to be called directly, but only through [hCons...] functions below. *)
-Axiom xhCons: forall {A}, (hashH A) -> ?? hashConsing A.
+Axiom xhCons: forall {A}, (hashP A) -> ?? hashConsing A.
 Extract Constant xhCons => "ImpHConsOracles.xhCons".
 
 Definition hCons_eq_msg: pstring := "xhCons: hash eq differs".
 
-Definition hCons {A} (hh: hashH A): ?? (hashConsing A) :=
-  DO hco <~ xhCons hh ;;
+Definition hCons {A} (hp: hashP A): ?? (hashConsing A) :=
+  DO hco <~ xhCons hp ;;
   RET {|
       hC := (fun x =>
          DO x' <~ hC hco x ;;
-         DO b0 <~ hash_eq hh x.(hdata) x' ;;
+         DO b0 <~ hash_eq hp x.(hdata) x' ;;
          assert_b b0 hCons_eq_msg;;
          RET x');
       next_hid := hco.(next_hid);
@@ -130,10 +130,10 @@ Definition hCons {A} (hh: hashH A): ?? (hashConsing A) :=
       |}.
 
 
-Lemma hCons_correct A (hh: hashH A):
-  WHEN hCons hh ~> hco THEN
-    (forall x y, WHEN hh.(hash_eq) x y ~> b THEN b=true -> (ignore_hid hh x)=(ignore_hid hh y)) ->
-    forall x, WHEN hco.(hC) x ~> x' THEN ignore_hid hh x.(hdata)=ignore_hid hh x'.
+Lemma hCons_correct A (hp: hashP A):
+  WHEN hCons hp ~> hco THEN
+    (forall x y, WHEN hp.(hash_eq) x y ~> b THEN b=true -> (ignore_hid hp x)=(ignore_hid hp y)) ->
+    forall x, WHEN hco.(hC) x ~> x' THEN ignore_hid hp x.(hdata)=ignore_hid hp x'.
 Proof.
   wlp_simplify.
 Qed.
@@ -149,7 +149,7 @@ Record hashV {A:Type}:= {
 }.
 Arguments hashV: clear implicits.
 
-Definition hashV_C {A} (test_eq: A -> A -> ?? bool) : hashH (hashV A) := {|
+Definition hashV_C {A} (test_eq: A -> A -> ?? bool) : hashP (hashV A) := {|
   hash_eq := fun v1 v2 => test_eq v1.(data) v2.(data);
   get_hid := hid;
   set_hid := fun v id => {| data := v.(data); hid := id |}
