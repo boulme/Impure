@@ -22,9 +22,9 @@ Module Type ImpureView.
 (* START COMMENT
  Module UnsafeImpure.
 
- Parameter unsafe_coerce: forall {A}, t A -> A.
+ Parameter unsafe_coerce: forall {A}, t A -> option A.
 
- Parameter unsafe_coerce_not_really_correct: forall A (k: t A) (x:A), (unsafe_coerce k)=x -> mayRet k x. 
+ Parameter unsafe_coerce_not_really_correct: forall A (k: t A) (x:A), (unsafe_coerce k)=Some x -> mayRet k x.
 
  Extraction Inline unsafe_coerce.
 
@@ -41,11 +41,11 @@ Module Impure: ImpureView.
 
   Module UnsafeImpure.
 
-  Definition unsafe_coerce {A} (x:t A) := x.
+  Definition unsafe_coerce {A} (x:t A) := Some x.
 
-  Lemma unsafe_coerce_not_really_correct: forall A (k: t A) x, (unsafe_coerce k)=x -> mayRet k x.
+  Lemma unsafe_coerce_not_really_correct: forall A (k: t A) x, (unsafe_coerce k)=Some x -> mayRet k x.
   Proof.
-    unfold unsafe_coerce, mayRet; auto.
+    unfold unsafe_coerce, mayRet; congruence.
   Qed.
 
   End UnsafeImpure.
