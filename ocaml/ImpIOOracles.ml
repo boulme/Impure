@@ -74,7 +74,7 @@ let println: pstring -> unit
   = fun l -> print l; print_newline()
 
 let read_line () =
-  CamlStr (Pervasives.read_line());;
+  CamlStr (Stdlib.read_line());;
     
 exception ImpureFail of pstring;;
 
