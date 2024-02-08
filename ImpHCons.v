@@ -57,7 +57,7 @@ Proof.
   - apply proj2_sig.
   - discriminate. 
 Qed.
-Hint Resolve is_present_correct: wlp.
+Global Hint Resolve is_present_correct: wlp.
 Global Opaque is_present.
 
 Definition msg_assert_incl: pstring := "Sets.assert_incl".
@@ -80,7 +80,7 @@ Lemma assert_incl_correct A (hp: hash_params A) l mod (d:t mod):
 Proof.
   induction l; wlp_simplify; subst; eauto.
 Qed.
-Hint Resolve assert_incl_correct: wlp.
+Global Hint Resolve assert_incl_correct: wlp.
 Global Opaque assert_incl.
 
 Definition assert_list_incl {A} (hp: hash_params A) (l1 l2: list A): ?? unit :=
@@ -95,7 +95,7 @@ Proof.
   wlp_simplify.
 Qed.
 Global Opaque assert_list_incl.
-Hint Resolve assert_list_incl_correct.
+Global Hint Resolve assert_list_incl_correct: wlp.
 
 End Sets.
 
@@ -112,6 +112,7 @@ Export HConsingDefs.
 (* NB: this axiom is NOT intended to be called directly, but only through [hCons...] functions below. *)
 Axiom xhCons: forall {A}, (hashP A) -> ?? hashConsing A.
 Extract Constant xhCons => "ImpHConsOracles.xhCons".
+Axiom hashcode_eq: forall (hid1 hid2: hashcode), {hid1=hid2} + {hid1<>hid2}.
 
 Definition hCons_eq_msg: pstring := "xhCons: hash eq differs".
 
@@ -138,7 +139,7 @@ Proof.
   wlp_simplify.
 Qed.
 Global Opaque hCons.
-Hint Resolve hCons_correct: wlp.
+Global Hint Resolve hCons_correct: wlp.
 
 
 
@@ -165,14 +166,14 @@ Lemma hConsV_correct A (hasheq: A -> A -> ?? bool):
     (forall x y, WHEN hasheq x y ~> b THEN b=true -> x=y) -> 
     forall x, WHEN hco.(hC) x ~> x' THEN x.(hdata).(data)=x'.(data).
 Proof.
-  Local Hint Resolve f_equal2.
+  Local Hint Resolve f_equal2: core.
   wlp_simplify.
   exploit H; eauto.
   + wlp_simplify.
   + intros; congruence.
 Qed.
 Global Opaque hConsV.
-Hint Resolve hConsV_correct: wlp.
+Global Hint Resolve hConsV_correct: wlp.
 
 Definition hC_known {A} (hco:hashConsing (hashV A)) (unknownHash_msg: hashinfo (hashV A) -> ?? pstring) (x:hashinfo (hashV A)): ?? hashV A :=
   DO clock <~ hco.(next_hid)();;
@@ -194,6 +195,63 @@ Proof.
   unfold wlp in * |- ; eauto.
 Qed.
 Global Opaque hC_known.
-Hint Resolve hC_known_correct: wlp.
+Global Hint Resolve hC_known_correct: wlp.
 
 End HConsing.
+
+Definition very_fast_eq_msg: pstring := "very_fast_eq failed".
+
+Definition very_fast_eq {A} (x:A) (y:A): bool
+  := safe_coerce (phys_eq x y) very_fast_eq_msg.
+
+Lemma very_fast_eq_correct {A} (x y: A): very_fast_eq x y = true -> x=y.
+Proof.
+  unfold very_fast_eq. intros; exploit safe_coerce_correct; eauto.
+  intros; eapply phys_eq_correct; eauto.
+Qed.
+
+
+Import Datatypes.
+
+
+(** Pure Comparison for Hash-Consed Values *)
+Module PureComparisons.
+
+Axiom hashcode_eq: hashcode -> hashcode -> bool.
+Extract Constant hashcode_eq => "(=)".
+
+Axiom hashcode_lt: hashcode -> hashcode -> bool.
+Extract Constant hashcode_lt => "(<)".
+
+Definition fast_eq {A} (h: A -> hashcode) (x y: A): bool
+ := if hashcode_eq (h x) (h y) then very_fast_eq x y else false.
+
+Lemma fast_eq_correct A (h: A -> hashcode) (x y: A):
+  fast_eq h x y = true -> x=y.
+Proof.
+  unfold fast_eq.
+  destruct (hashcode_eq _ _); try congruence.
+  intros; apply very_fast_eq_correct. auto.
+Qed.
+
+Definition fast_cmp {A} (h: A -> hashcode) (x y: A): comparison 
+ := if fast_eq h x y 
+    then Eq
+    else if hashcode_lt (h x) (h y) then Lt else Gt
+    .
+
+Lemma fast_cmp_Eq_correct A (h: A -> hashcode) (x y: A):
+  fast_cmp h x y = Eq -> x=y.
+Proof.
+  unfold fast_cmp.
+  destruct (fast_eq _ _ _) eqn: X.
+  + intros; eapply fast_eq_correct. eauto.
+  + destruct (hashcode_lt _ _); congruence.
+Qed.
+
+Extraction Inline hashcode_eq hashcode_lt very_fast_eq fast_eq fast_cmp.
+
+End PureComparisons.
+
+ 
+

@@ -20,6 +20,9 @@ Extract Constant println => "ImpIOOracles.println".
 Axiom read_line: unit -> ?? pstring.
 Extract Constant read_line => "ImpIOOracles.read_line".
 
+Axiom string_of_bool: bool -> ?? pstring.
+Extract Constant string_of_bool => "ImpIOOracles.string_of_bool".
+
 Require Import ZArith.
 Axiom string_of_Z: Z -> ?? pstring.
 Extract Constant string_of_Z => "ImpIOOracles.string_of_Z".
@@ -68,6 +71,28 @@ Example _FAILWITH_correct A msg (P: A -> Prop):
 Proof.
   wlp_simplify.
 Qed.
+
+Definition assert_k (k: ?? bool) (msg: pstring): ?? unit
+  := DO b <~ k;; if b then RET tt else FAILWITH msg.
+Extraction Inline assert_k.
+
+Lemma assert_k_correct (k: ?? bool) (msg: pstring):
+  WHEN assert_k k msg ~> _ THEN k ~~> true.
+Proof.
+  wlp_simplify.
+Qed.
+
+Definition safe_coerce (k: ?? bool) (msg: pstring): bool
+  := has_returned (assert_k k msg).
+Extraction Inline safe_coerce.
+
+Lemma safe_coerce_correct (k: ?? bool) (msg: pstring):
+  safe_coerce k msg = true -> k ~~> true.
+Proof.
+  unfold safe_coerce. intros; exploit has_returned_correct; eauto.
+  intros (r & X); eapply assert_k_correct; eauto.
+Qed.
+
 
 Notation "'TRY' k1 'WITH_FAIL' s ',' e '=>' k2" := (try_with_fail (fun _ => k1, fun s e => k2))
     (at level 55, k1 at level 53, right associativity): impure_scope.

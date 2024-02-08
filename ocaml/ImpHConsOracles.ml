@@ -38,12 +38,18 @@ let xhCons (type a) (hp:a hashP) =
   let t = MyHashtbl.create 1000 in
   let logs = ref [] in
   {
-   hC = (fun (k:a hashinfo) ->
+    hC = (fun (k:a hashinfo) ->
+     (* DEBUG:
+     Printf.printf "*in %d -- look for hcodes= " (Obj.magic t);
+     List.iter (fun i -> Printf.printf "%d " i) k.hcodes;
+     print_newline();
+     *)
      match MyHashtbl.find_opt t k with
      | Some d -> d
-     | None -> (*print_string "+";*)
-        let d = hp.set_hid k.hdata (MyHashtbl.length t) in
-        MyHashtbl.add t {k with hdata = d } d; d);
+     | None ->
+         (* DEBUG: Printf.printf "*in %d -- new hid:%d" (Obj.magic t) (MyHashtbl.length t); print_newline(); *)
+         let d = hp.set_hid k.hdata (MyHashtbl.length t) in
+         MyHashtbl.add t {k with hdata = d } d; d);
    next_log = (fun info -> logs := (MyHashtbl.length t, info)::(!logs));
    next_hid = (fun () -> MyHashtbl.length t);
    remove = (fun (x:a hashinfo) -> MyHashtbl.remove t x);

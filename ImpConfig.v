@@ -31,7 +31,6 @@ Module Type ImpureView.
  End UnsafeImpure.
 END COMMENT *)
 
-
 End ImpureView.
 
 
@@ -52,7 +51,6 @@ Module Impure: ImpureView.
 
 End Impure.
 
-
 (** Comment the above code and decomment this to test that coq proofs still work with an impure monad !
 
 - this should fail only on extraction or if unsafe_coerce is used !
@@ -64,7 +62,7 @@ Module Impure: MayReturnMonad := PowerSetMonad.
 
 Export Impure.
 
-Extraction Inline ret mk_annot.
+Extraction Inline ret mk_annot det_coerce.
 
 
 (* WARNING. The following directive is unsound.
@@ -77,7 +75,7 @@ For example, it may lead to extract the following code as "true" (instead of an 
 *)
 
 Extract Inlined Constant bind => "(|>)".
-
+Extract Inlined Constant has_returned => "(fun k -> k; true)".
 
 Extract Constant t "" => "". (* This weird directive extracts [t] as "'a" instead of "'a t" *)
 Extraction Inline t.

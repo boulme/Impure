@@ -14,6 +14,8 @@ val print: pstring -> unit
 
 val println: pstring -> unit
 
+val string_of_bool: bool -> pstring
+
 val string_of_Z: BinNums.coq_Z -> pstring
 
 val timer : (('a -> 'b ) * 'a) -> 'b   

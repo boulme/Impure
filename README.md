@@ -9,6 +9,7 @@ parameter and its result). Side-effects are simply ignored. And
 reasoning on such a function is only possible in partial correctness.
 
 See further explanations and examples on [ImpureDemo](https://github.com/boulme/ImpureDemo).
+This library is also part of [Chamois CompCert](https://gricad-gitlab.univ-grenoble-alpes.fr/certicompil/Chamois-CompCert).
 
 ## Credits
 

@@ -122,6 +122,9 @@ let rec string_of_pos (p:BinNums.positive) (acc: pstring): pstring
   | BinNums.Zpos p0 -> string_of_pos p0 acc0
   | _ -> assert false
 
+let string_of_bool (b: bool): pstring
+= if b then CamlStr "true" else CamlStr "false"
+
 (*
 let string_of_Z_debug: BinNums.coq_Z -> pstring
 = fun p -> CamlStr (string_of_int (zTr p))

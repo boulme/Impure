@@ -5,22 +5,6 @@
 Require Export Program.
 Require Export ImpConfig.
 
-(* Theory: bind + embed => dbind 
-
-Program Definition dbind {A B} (k1: t A) (k2: forall (a:A), (mayRet k1 a) -> t B) : t B
-  := bind (mk_annot k1) (fun a => k2 a _).
-
-Lemma mayRet_dbind: forall (A B:Type) k1 k2 (b:B),
-     mayRet (dbind k1 k2) b -> exists a:A, exists H: (mayRet k1 a), mayRet (k2 a H) b.
-Proof.
-  intros A B k1 k2 b H; decompose [ex and] (mayRet_bind _ _ _ _ _ H).
-  eapply ex_intro.
-  eapply ex_intro.
-  eauto.
-Qed.
-
-*)
-
 Definition wlp {A:Type} (k: t A) (P: A -> Prop): Prop
   := forall a, mayRet k a -> P a.
 
@@ -30,6 +14,7 @@ Definition wlp {A:Type} (k: t A) (P: A -> Prop): Prop
 
 Module Notations.
 
+  Declare Scope impure_scope.
   Bind Scope impure_scope with t.
   Delimit Scope impure_scope with impure.
 
@@ -55,7 +40,7 @@ End Notations.
 Import Notations.
 Local Open Scope impure.
 
-Goal ((?? list nat * ??nat -> nat) = ((?? ((list nat) * ?? nat) -> nat)))%type.
+Goal ( (?? list nat * ??nat -> nat) = (?? ((list nat) * ?? nat) -> nat) )%type.
 Proof.
   apply refl_equal.
 Qed.
@@ -140,6 +125,19 @@ Proof.
   destruct x; simpl; auto.
 Qed.
 
+Lemma revert_wlp_0 [A : Type] [k : ?? A] [P : A -> Prop]:
+  wlp k P -> forall (a : A), (k ~~> a) -> P a.
+Proof.
+  auto.
+Qed.
+
+Lemma revert_wlp_1 [A : Type] [k : ?? A] [a : A] [P : Prop]
+  (H0 : wlp k (fun b => b = a -> P)) (H1 : k ~~> a): P.
+Proof.
+  apply H0 in H1; auto.
+Qed.
+
+
 (* Tactics 
 
 MAIN tactics:  
@@ -182,6 +180,25 @@ Ltac wlp_step hint :=
         || (apply wlp_unfold; introcomp)
     end.
 
+(* decompose a sequence of binds into hypotheses that can be introduced with [intros] *)
+Ltac wlp_seq :=
+  match goal with
+  | |- wlp (ret _) _ =>
+      apply wlp_ret
+  | |- wlp (bind _ _) _ =>
+      apply wlp_bind;
+      let x := fresh "x" in
+      let H := fresh "H" in
+      intros x H;
+      try wlp_seq;
+      revert x H
+  end.
+
+(* Produce a goal [WHEN f ~> b THEN b = a -> GOAL] using an hypothesis [f ~~> a] *)
+Ltac revert_wlp H :=
+  revert H; refine (revert_wlp_1 _).
+
+
 (* main general tactic 
 WARNING: for the good behavior of "wlp_xsimplify", "hint" must at least perform a "eauto".
 
@@ -190,6 +207,9 @@ Example of use:
 *)
 Ltac wlp_xsimplify hint := 
     repeat (intros; subst; wlp_step hint; simpl; (tauto || hint)).
+
+Ltac wlp_ssimplify hint := 
+    repeat (intros; subst; wlp_step hint; simpl; hint).
 
 Create HintDb wlp discriminated.
 

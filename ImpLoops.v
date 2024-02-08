@@ -119,5 +119,5 @@ Lemma rec_correct A B beq recF (R: A -> B -> Prop) (H1: rec_preserv recF R) (H2:
 Proof.
   wlp_simplify.
 Qed.
-Hint Resolve rec_correct: wlp.
+#[global] Hint Resolve rec_correct: wlp.
 Global Opaque rec.
